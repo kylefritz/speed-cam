@@ -3,7 +3,7 @@ import camera
 
 sched = BlockingScheduler()
 
-@sched.scheduled_job('save_occasional_image', minutes=30)
+@sched.scheduled_job('interval', minutes=30)
 def timed_job():
     camera.capture_single_image()
 
