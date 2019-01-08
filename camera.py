@@ -91,7 +91,7 @@ def run_camera_loop():
         for (x, y, w, h) in contour_rectangles:
             pt1 = (x, y)
             pt2 = (x + w, y + h)
-            cv2.Rectangle(cropped, pt1, pt2, 'magenta')
+            cv2.rectangle(cropped, pt1, pt2, 'magenta')
 
         # save boxed
         save_to = '/home/aws_cam/Pictures/%s.jpg' % (captured_at.isoformat())
