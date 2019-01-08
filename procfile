@@ -1,2 +1,2 @@
-camera: PYTHONUNBUFFERED=true python app.py
+camera: PYTHONUNBUFFERED=true python camera.py
 background: PYTHONUNBUFFERED=true python clock.py
