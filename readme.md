@@ -8,4 +8,4 @@ I mounted an AWS Deep Lense camera at my house. I'm using this repo to develop a
 
 ## env suggestions
  * use [pyenv](https://github.com/pyenv/pyenv)
- * `pyenv install $(cat .python-version)`
+ * `pyenv install` will install the right python from the `.python-version` file
