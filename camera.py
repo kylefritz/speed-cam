@@ -38,6 +38,7 @@ def filter_contours(contours):
     return filtered
 
 
+STORAGE_ROOT = '/mnt/usb-sd'
 DEEPCAM_FFSERVER_URL = 'http://deepcam.local:8090/camera.mjpeg'
 
 
@@ -52,7 +53,7 @@ def capture_single_image():
     frame = flip_and_rotate(frame)
     frame = crop_remove_warp(frame)
 
-    save_to = '/home/aws_cam/occasionals/%s.jpg' % (captured_at.isoformat())
+    save_to = '%s/occasionals/%s.jpg' % (STORAGE_ROOT, captured_at.isoformat())
     cv2.imwrite(save_to, crop_remove_warp(frame))
     print('saved occasional image')
 
@@ -60,7 +61,6 @@ def capture_single_image():
 def run_camera_loop():
     cam = cv2.VideoCapture(DEEPCAM_FFSERVER_URL)
     fgbg = cv2.createBackgroundSubtractorMOG2()
-    frames_with_cars = 0
 
     while True:
         success, frame = cam.read()
@@ -91,23 +91,16 @@ def run_camera_loop():
         if len(contour_rectangles) == 0:
             continue
 
-        frames_with_cars += 1
-        print('contour rectangles: {}, total: {}'.format(contour_rectangles, frames_with_cars))
-
+        # draw tracks on image
         for (x, y, w, h) in contour_rectangles:
             pt1 = (x, y)
             pt2 = (x + w, y + h)
             cv2.rectangle(cropped, pt1, pt2, (255, 0, 255), 2)
 
-        # save boxed
-        save_to = '/home/aws_cam/Pictures/%s.jpg' % (captured_at.isoformat())
-        cv2.imwrite(save_to, cropped)
 
-        # save original
-        save_to = '/home/aws_cam/originals/%s.jpg' % (captured_at.isoformat())
+        # save tracked
+        save_to = '%s/tracked/%s.jpg' % (STORAGE_ROOT, captured_at.isoformat())
         cv2.imwrite(save_to, crop_remove_warp(frame))
-
-        print('saved images')
 
 
 if __name__ == "__main__":
