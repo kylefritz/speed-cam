@@ -1,14 +1,18 @@
+from dotenv import load_dotenv
+from urllib.parse import urlparse
 import argparse
 import http.client
-import os
 import json
+import os
 import sys
-from pprint import pprint
-from collections import namedtuple
-from dotenv import load_dotenv
+
+
+def print_json(thing):
+    print(json.dumps(thing, indent=2, sort_keys=True))
 
 
 def get_access_token():
+    # help from: https://github.com/jensmdriller/utility-scripts/blob/master/nest-cam-api/acquire-access-token.py
     CLIENT_ID = os.getenv('NEST_CLIENT_ID')
     CLIENT_SECRET = os.getenv('NEST_CLIENT_SECRET')
     print(CLIENT_ID)
@@ -28,11 +32,8 @@ def get_access_token():
     headers = {'content-type': "application/x-www-form-urlencoded"}
     conn.request("POST", "/oauth2/access_token", payload, headers)
     res = conn.getresponse()
-    json_string = res.read().decode("utf-8")
-
-    # parse json response
-    response = json.loads(json_string)
-    pprint(response)
+    response = json.loads(res.read().decode("utf-8"))
+    print_json(response)
 
     access_token = response.get('access_token')
     if not access_token:
@@ -45,6 +46,50 @@ def get_access_token():
     return 0
 
 
+def read_nest_data():
+    access_token = os.getenv('NEST_ACCESS_TOKEN')
+    # print(access_token)
+    if not access_token:
+        print('must use pin to get access token and set in env')
+        return 1
+
+    conn = http.client.HTTPSConnection("developer-api.nest.com")
+    headers = {'authorization': "Bearer {0}".format(access_token)}
+    conn.request("GET", "/", headers=headers)
+    response = conn.getresponse()
+
+    # from nest-python3 connection example
+    if response.status == 307:
+        redirectLocation = urlparse(response.getheader("location"))
+        conn = http.client.HTTPSConnection(redirectLocation.netloc)
+        conn.request("GET", "/", headers=headers)
+        response = conn.getresponse()
+        if response.status != 200:
+            raise Exception("Redirect with non 200 response")
+
+    nest_data = json.loads(response.read().decode("utf-8"))
+    # print_json(nest_data)
+    return nest_data
+
+
+# help from https: // github.com/jensmdriller/utility-scripts/blob/master/nest-cam-api/motion-email-alerts.py
+def get_cam_feed():
+    nest = read_nest_data()
+    camera_id = os.getenv('NEST_CAMERA_ID')
+    front_door_cam = nest['devices']['cameras'][camera_id]
+    print_json(front_door_cam)
+
+    # front_door_cam['web_url']
+
+    # enabling *public URL* filled in "public_share_url"
+    # by poking throught the source in web inspector
+    # i was able to find and open an m3u8 stream in VLC player...
+    # https://stream-us1-alfa.dropcam.com:443/nexus_aac/<32 character hash>/playlist.m3u8
+    os.getenv('NEST_M3U8_ID')
+
+    # would not have needed any of the nest api stuff for that though :)
+
+
 if __name__ == "__main__":
     load_dotenv()
 
@@ -54,3 +99,5 @@ if __name__ == "__main__":
     args = parser.parse_args()
     if args.access_token:
         sys.exit(get_access_token())
+
+    get_cam_feed()
