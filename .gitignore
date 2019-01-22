@@ -2,3 +2,4 @@ many-test-images
 .vscode
 .ipynb_checkpoints
 __pycache__
+.env
