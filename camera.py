@@ -1,6 +1,7 @@
 import cv2
 import datetime
 import imutils
+import os
 import time
 
 
@@ -99,7 +100,6 @@ def run_camera_loop():
             pt1 = (x, y)
             pt2 = (x + w, y + h)
             cv2.rectangle(cropped, pt1, pt2, (255, 0, 255), 2)
-
 
         # save tracked
         save_to = '%s/%s.jpg' % (TRACKED_PATH, captured_at.isoformat())
