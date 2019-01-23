@@ -14,8 +14,12 @@ I mounted an AWS Deep Lense camera at my house. I'm using this repo to develop a
 </table>
 
 ## setup
- * `$ pip install -r requirements.txt`
- * `$ honcho start`
+```
+pip install -r requirements.txt
+honcho start
+# setup STORAGE_ROOT, hardcoded to /mnt/usb-sd
+```
+
 
 ## env suggestions
  * use [pyenv](https://github.com/pyenv/pyenv)

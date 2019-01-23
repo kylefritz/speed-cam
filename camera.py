@@ -40,6 +40,8 @@ def filter_contours(contours):
 
 STORAGE_ROOT = '/mnt/usb-sd'
 DEEPCAM_FFSERVER_URL = 'http://deepcam.local:8090/camera.mjpeg'
+OCCASIONALS_PATH = '%s/occasionals' % (STORAGE_ROOT)
+TRACKED_PATH = '%s/tracked' % (STORAGE_ROOT)
 
 
 def capture_single_image():
@@ -53,9 +55,10 @@ def capture_single_image():
     frame = flip_and_rotate(frame)
     frame = crop_remove_warp(frame)
 
-    save_to = '%s/occasionals/%s.jpg' % (STORAGE_ROOT, captured_at.isoformat())
-    cv2.imwrite(save_to, crop_remove_warp(frame))
-    print('saved occasional image')
+    save_to = '%s/%s.jpg' % (OCCASIONALS_PATH, captured_at.isoformat())
+    success = cv2.imwrite(save_to, crop_remove_warp(frame))
+    print('saved occasional image: {}'.format(success))
+    return success
 
 
 def run_camera_loop():
@@ -99,9 +102,13 @@ def run_camera_loop():
 
 
         # save tracked
-        save_to = '%s/tracked/%s.jpg' % (STORAGE_ROOT, captured_at.isoformat())
-        cv2.imwrite(save_to, crop_remove_warp(frame))
+        save_to = '%s/%s.jpg' % (TRACKED_PATH, captured_at.isoformat())
+        write_success = cv2.imwrite(save_to, crop_remove_warp(frame))
+        if not write_success:
+            print('couldnt write out {}. error: {}'.format(save_to, write_success))
 
 
 if __name__ == "__main__":
+    os.makedirs(OCCASIONALS_PATH, exist_ok=True)
+    os.makedirs(TRACKED_PATH, exist_ok=True)
     run_camera_loop()
