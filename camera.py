@@ -64,7 +64,7 @@ def capture_single_image():
     frame = crop_remove_warp(frame)
 
     save_to = image_path(captured_at, is_occasional=True)
-    success = cv2.imwrite(save_to, crop_remove_warp(frame))
+    success = cv2.imwrite(save_to, frame)
     print('save=', save_to, ' success=', success)
     return success
 
