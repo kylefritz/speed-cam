@@ -3,6 +3,7 @@ import datetime
 import imutils
 import os
 import time
+import object_tracker as ot
 
 
 def crop_remove_warp(im):
@@ -41,8 +42,14 @@ def filter_contours(contours):
 
 STORAGE_ROOT = '/mnt/usb-sd'
 DEEPCAM_FFSERVER_URL = 'http://deepcam.local:8090/camera.mjpeg'
-OCCASIONALS_PATH = '%s/occasionals' % (STORAGE_ROOT)
-TRACKED_PATH = '%s/tracked' % (STORAGE_ROOT)
+OCCASIONALS_PATH = '{}/occasionals'.format(STORAGE_ROOT)
+TRACKED_PATH = '{}/tracked'.format(STORAGE_ROOT)
+
+
+def image_path(capture_time, is_occasional=False):
+    base_path = OCCASIONALS_PATH if is_occasional else TRACKED_PATH
+    file_name = '{}.jpg'.format(capture_time.isoformat().replace(':', '_'))
+    return os.path.join(base_path, file_name)
 
 
 def capture_single_image():
@@ -50,21 +57,22 @@ def capture_single_image():
     success, frame = cam.read()
     captured_at = datetime.datetime.now()
     if not success:
-        print('failed to saved occasional image')
+        print('occasional image cam.read failed')
         return
 
     frame = flip_and_rotate(frame)
     frame = crop_remove_warp(frame)
 
-    save_to = '%s/%s.jpg' % (OCCASIONALS_PATH, captured_at.isoformat())
+    save_to = image_path(captured_at, is_occasional=True)
     success = cv2.imwrite(save_to, crop_remove_warp(frame))
-    print('saved occasional image: {}'.format(success))
+    print('save=', save_to, ' success=', success)
     return success
 
 
 def run_camera_loop():
     cam = cv2.VideoCapture(DEEPCAM_FFSERVER_URL)
     fgbg = cv2.createBackgroundSubtractorMOG2()
+    tracker = ot.ObjectTracker()
 
     while True:
         success, frame = cam.read()
@@ -102,10 +110,10 @@ def run_camera_loop():
             cv2.rectangle(cropped, pt1, pt2, (255, 0, 255), 2)
 
         # save tracked
-        save_to = '%s/%s.jpg' % (TRACKED_PATH, captured_at.isoformat())
+        save_to = image_path(captured_at)
         write_success = cv2.imwrite(save_to, crop_remove_warp(frame))
         if not write_success:
-            print('couldnt write out {}. error: {}'.format(save_to, write_success))
+            print('couldnt save image to ', save_to)
 
 
 if __name__ == "__main__":
