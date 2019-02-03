@@ -7,12 +7,17 @@ import time
 
 from object_tracker import ObjectTracker
 
+CROP_REMOVE_WARP = (200, 1200, 500, 2000)
+CROP_TO_ROAD = (810, 950, 680, 2000)
+DEEPCAM_FFSERVER_URL = 'http://deepcam.local:8090/camera.mjpeg'
+STORAGE_ROOT = '/mnt/usb-sd'
+
 
 def crop_remove_warp(im):
-    return im[200:1200, 500:2000]
+    (x0, xf, y0, yf) = CROP_REMOVE_WARP
+    return im[x0:xf, y0:yf]
 
 
-CROP_TO_ROAD = (810, 950, 680, 2000)
 def crop_to_road(im):
     (x0, xf, y0, yf) = CROP_TO_ROAD
     return im[x0:xf, y0:yf]
@@ -29,7 +34,6 @@ def flip_and_rotate(im):
 
 
 def filter_contours(contours):
-    filtered = []
     for c in imutils.grab_contours(contours):
         area = cv2.contourArea(c)
         if area < 4_500:  # too small
@@ -40,18 +44,14 @@ def filter_contours(contours):
             continue
         if h < 80:  # too short
             continue
-        filtered.append(rect)
-    return filtered
-
-
-STORAGE_ROOT = '/mnt/usb-sd'
-DEEPCAM_FFSERVER_URL = 'http://deepcam.local:8090/camera.mjpeg'
-OCCASIONALS_PATH = '{}/occasionals'.format(STORAGE_ROOT)
-TRACKED_PATH = '{}/tracked'.format(STORAGE_ROOT)
+        yield rect
 
 
 def image_path(capture_time, is_occasional=False):
-    base_path = OCCASIONALS_PATH if is_occasional else TRACKED_PATH
+    folder_name = 'occasionals' if is_occasional else 'tracked'
+    base_path = os.path.join(STORAGE_ROOT, folder_name)
+    os.makedirs(base_path, exist_ok=True)
+
     file_name = '{}.jpg'.format(capture_time.isoformat().replace(':', '_'))
     return os.path.join(base_path, file_name)
 
@@ -72,12 +72,19 @@ def capture_single_image():
     print('save=', save_to, ' success=', success)
     return success
 
+
 class SpeedCamera:
-    def __init__(self):
+    @staticmethod
+    async def run(completed_tracks_q):
+        robot = SpeedCamera(completed_tracks_q)
+        robot.run_loop_forever()
+
+    def __init__(self, completed_tracks_q):
         self.fgbg = cv2.createBackgroundSubtractorMOG2()
         self.tracker = ObjectTracker()
+        self.completed_tracks_q = completed_tracks_q
 
-    async def run_loop_forever(self):
+    def run_loop_forever(self):
         cam = cv2.VideoCapture(DEEPCAM_FFSERVER_URL)
         while True:
             success, frame = cam.read()
@@ -106,7 +113,7 @@ class SpeedCamera:
         # convert to gray before applying find contours
         gray_blurred = cv2.cvtColor(no_bg_blurred, cv2.COLOR_BGR2GRAY)
         contours = cv2.findContours(gray_blurred, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        contour_rectangles = filter_contours(contours)
+        contour_rectangles = list(filter_contours(contours))
 
         if len(contour_rectangles) == 0:
             return
@@ -126,8 +133,24 @@ class SpeedCamera:
             print('couldnt save image to ', save_to)
 
 
+async def upload_track_worker(queue):
+    while True:
+        # Get a "work item" out of the queue.
+        work_item = await queue.get()
+
+        print(f'processed {work_item}')
+
+        # Notify the queue that the "work item" has been processed.
+        queue.task_done()
+
+
+async def main():
+    tasks = [
+        asyncio.create_task(SpeedCamera.run()),
+        asyncio.create_task(upload_track_worker())
+    ]
+
+    await asyncio.gather(*tasks, return_exceptions=True)
+
 if __name__ == "__main__":
-    os.makedirs(OCCASIONALS_PATH, exist_ok=True)
-    os.makedirs(TRACKED_PATH, exist_ok=True)
-    robot = SpeedCamera()
-    asyncio.run(robot.run_loop_forever())
+    asyncio.run(main())
