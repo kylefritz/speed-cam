@@ -1,5 +1,6 @@
 import datetime
 from region import Region
+from log import log
 
 class Track:
     next_object_id = 0

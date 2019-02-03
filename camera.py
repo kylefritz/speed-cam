@@ -4,8 +4,10 @@ import datetime
 import imutils
 import os
 import time
+import logging
 
 from object_tracker import ObjectTracker
+from log import log
 import paths
 import s3
 
@@ -49,22 +51,23 @@ def filter_contours(contours):
 
 
 def capture_single_image():
+    log.info(f'capturing image')
     cam = cv2.VideoCapture(DEEPCAM_FFSERVER_URL)
     success, frame = cam.read()
     captured_at = datetime.datetime.now()
     if not success:
-        print('occasional image cam.read failed')
+        log.error('occasional image cam.read failed')
         return
 
     frame = flip_and_rotate(frame)
     frame = crop_remove_warp(frame)
+    log.info(f'captured')
 
     s3.upload_image('occasional', frame, captured_at)
-    print('save occasional to s3')
 
     # save_to = paths.image_path('occasional', captured_at)
     # success = cv2.imwrite(save_to, frame)
-    # print('save=', save_to, ' success=', success)
+    # log.info('save=', save_to, ' success=', success)
 
 
 class SpeedCamera:
@@ -85,7 +88,7 @@ class SpeedCamera:
             success, frame = cam.read()
             captured_at = datetime.datetime.now()
             if not success:
-                print('failed to read from video stream; sleeping for 5 seconds')
+                log.error('failed to read from video stream; sleeping for 5 seconds')
                 time.sleep(5)
                 continue
 
@@ -131,7 +134,7 @@ async def frame_s3_worker(queue):
 async def track_api_worker(queue):
     while True:
         track = await queue.get()  # Get work item from queue
-        print(f'upload to rails? {track.id}')
+        log.warn(f'upload to rails? {track.id}')
         queue.task_done()  # Notify queue that work item processed
 
 

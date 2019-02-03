@@ -1,3 +1,5 @@
+from log import log
+
 class Region:
     @staticmethod
     def can_merge(r1, r2):

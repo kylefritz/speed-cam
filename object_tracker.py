@@ -1,6 +1,7 @@
 import datetime
 from region import Region
 from track import Track
+from log import log
 
 
 class ObjectTracker:
@@ -24,6 +25,7 @@ class ObjectTracker:
 
             # birth new track
             self.tracks.append(Track(region))
+            log.info(f'birthed')
 
         # split tracks into next generation and ones ready to reap
         next_generation, reaped = [], []
@@ -34,6 +36,7 @@ class ObjectTracker:
                 track.inc_generation()
                 next_generation.append(track)
 
+        log.info(f'promoted={len(next_generation)} reaped={len(reaped)}')
         self.tracks = next_generation
 
         # return the reaped tracks so they can be saved
