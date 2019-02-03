@@ -1,9 +1,9 @@
+apscheduler
+honcho
 imutils
 jupyter
 matplotlib
 numpy
 opencv-python
 pandas
-apscheduler
-honcho
 python-dotenv

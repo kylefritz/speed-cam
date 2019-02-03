@@ -1,17 +1,21 @@
+import asyncio
 import cv2
 import datetime
 import imutils
 import os
 import time
-import object_tracker as ot
+
+from object_tracker import ObjectTracker
 
 
 def crop_remove_warp(im):
     return im[200:1200, 500:2000]
 
 
+CROP_TO_ROAD = (810, 950, 680, 2000)
 def crop_to_road(im):
-    return im[810:950, 680:2000]
+    (x0, xf, y0, yf) = CROP_TO_ROAD
+    return im[x0:xf, y0:yf]
 
 
 def blur(im):
@@ -68,28 +72,32 @@ def capture_single_image():
     print('save=', save_to, ' success=', success)
     return success
 
+class SpeedCamera:
+    def __init__(self):
+        self.fgbg = cv2.createBackgroundSubtractorMOG2()
+        self.tracker = ObjectTracker()
 
-def run_camera_loop():
-    cam = cv2.VideoCapture(DEEPCAM_FFSERVER_URL)
-    fgbg = cv2.createBackgroundSubtractorMOG2()
-    tracker = ot.ObjectTracker()
+    async def run_loop_forever(self):
+        cam = cv2.VideoCapture(DEEPCAM_FFSERVER_URL)
+        while True:
+            success, frame = cam.read()
+            captured_at = datetime.datetime.now()
+            if not success:
+                print('failed to read from video stream; sleeping for 5 seconds')
+                time.sleep(5)
+                continue
 
-    while True:
-        success, frame = cam.read()
-        captured_at = datetime.datetime.now()
-        if not success:
-            print('failed to read from video stream; sleeping for 5 seconds')
-            time.sleep(5)
-            continue
+            self.process_frame(frame, captured_at)
 
+    def process_frame(self, frame, captured_at):
         frame = flip_and_rotate(frame)
 
         # tight crop & blur
         cropped = crop_to_road(frame)
-        blurred = blur(cropped)
+        blurred = blur(cropped)  # TODO: why blur going into fgbg?
 
         # rm background & shadows
-        fgmask = fgbg.apply(blurred)
+        fgmask = self.fgbg.apply(blurred)
         SHADOW_VALUE = 127
         foreground_mask = cv2.threshold(fgmask, SHADOW_VALUE + 1, 255, cv2.THRESH_BINARY)[1]
         foreground_mask = cv2.dilate(foreground_mask, None, iterations=3)
@@ -101,7 +109,9 @@ def run_camera_loop():
         contour_rectangles = filter_contours(contours)
 
         if len(contour_rectangles) == 0:
-            continue
+            return
+
+        self.tracker.process(cropped, contour_rectangles)
 
         # draw tracks on image
         for (x, y, w, h) in contour_rectangles:
@@ -119,4 +129,5 @@ def run_camera_loop():
 if __name__ == "__main__":
     os.makedirs(OCCASIONALS_PATH, exist_ok=True)
     os.makedirs(TRACKED_PATH, exist_ok=True)
-    run_camera_loop()
+    robot = SpeedCamera()
+    asyncio.run(robot.run_loop_forever())
