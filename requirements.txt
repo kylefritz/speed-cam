@@ -1,4 +1,5 @@
 apscheduler
+boto3
 honcho
 imutils
 jupyter

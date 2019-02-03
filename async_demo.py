@@ -1,17 +1,6 @@
 import asyncio
 
 
-async def main():
-    q = asyncio.Queue()
-    tasks = [
-        asyncio.create_task(worker(q)),
-        asyncio.create_task(publisher(q)),
-    ]
-
-    # Wait until all worker tasks are cancelled
-    await asyncio.gather(*tasks, return_exceptions=True)
-
-
 async def publisher(q):
     while True:
         print('enqueued thing')
@@ -31,4 +20,10 @@ async def worker(queue):
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    loop = asyncio.get_event_loop()
+    q = asyncio.Queue()
+    loop.run_until_complete(asyncio.gather(
+        publisher(q),
+        worker(q),
+    ))
+    loop.close()
