@@ -4,15 +4,14 @@ import datetime
 import imutils
 import os
 import time
-import tempfile
-import boto3
 
 from object_tracker import ObjectTracker
+import paths
+import s3
 
 CROP_REMOVE_WARP = (200, 1200, 500, 2000)
 CROP_TO_ROAD = (810, 950, 680, 2000)
 DEEPCAM_FFSERVER_URL = 'http://deepcam.local:8090/camera.mjpeg'
-STORAGE_ROOT = '/mnt/usb-sd'
 
 
 def crop_remove_warp(im):
@@ -49,25 +48,6 @@ def filter_contours(contours):
         yield rect
 
 
-def _folder_and_name(capture_time, is_occasional):
-    folder_name = 'occasionals' if is_occasional else 'tracked'
-    name = capture_time.isoformat().replace(':', '_')
-    return (folder_name, f'{name}.jpg')
-
-
-def image_path(capture_time, is_occasional=False):
-    folder_name, file_name = _folder_and_name(capture_time, is_occasional)
-    base_path = os.path.join(STORAGE_ROOT, folder_name)
-    os.makedirs(base_path, exist_ok=True)
-
-    return os.path.join(base_path, file_name)
-
-
-def image_s3_key(capture_time, is_occasional=False):
-    folder_name, file_name = _folder_and_name(capture_time, is_occasional)
-    return os.path.join(folder_name, file_name)
-
-
 def capture_single_image():
     cam = cv2.VideoCapture(DEEPCAM_FFSERVER_URL)
     success, frame = cam.read()
@@ -79,10 +59,12 @@ def capture_single_image():
     frame = flip_and_rotate(frame)
     frame = crop_remove_warp(frame)
 
-    save_to = image_path(captured_at, is_occasional=True)
-    success = cv2.imwrite(save_to, frame)
-    print('save=', save_to, ' success=', success)
-    return success
+    s3.upload_image('occasional', frame, captured_at)
+    print('save occasional to s3')
+
+    # save_to = paths.image_path('occasional', captured_at)
+    # success = cv2.imwrite(save_to, frame)
+    # print('save=', save_to, ' success=', success)
 
 
 class SpeedCamera:
@@ -136,28 +118,15 @@ class SpeedCamera:
             return
 
         # save frame
-        self.frames_q.put_nowait((captured_at, frame))
+        self.frames_q.put_nowait((captured_at, crop_remove_warp(frame)))
 
 
 async def frame_s3_worker(queue):
-    # Create an S3 client
-    s3 = boto3.client('s3')
-
     while True:
         # Get a "work item" out of the queue.
         (captured_at, frame) = await queue.get()
 
-        file = tempfile.NamedTemporaryFile(delete=True)
-        write_success = cv2.imwrite(file.name, crop_remove_warp(frame))
-        if not write_success:
-            print('couldnt save image to ', file.name)
-
-        s3_key = image_s3_key(captured_at)
-        bucket_name = 'slow-down-speed-cam'
-
-        # Uploads the given file using a managed uploader, which will split up large
-        # files automatically and upload parts in parallel.
-        s3.upload_file(file.name, bucket_name, s3_key)
+        s3.upload_image('tracked', frame, captured_at)
 
         # Notify the queue that the "work item" has been processed.
         queue.task_done()
