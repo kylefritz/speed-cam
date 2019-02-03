@@ -123,24 +123,16 @@ class SpeedCamera:
 
 async def frame_s3_worker(queue):
     while True:
-        # Get a "work item" out of the queue.
-        (captured_at, frame) = await queue.get()
-
+        track = await queue.get()  # Get work item from queue
         s3.upload_image('tracked', frame, captured_at)
-
-        # Notify the queue that the "work item" has been processed.
-        queue.task_done()
+        queue.task_done()  # Notify queue that work item processed
 
 
 async def track_api_worker(queue):
     while True:
-        # Get a "work item" out of the queue.
-        track = await queue.get()
-
+        track = await queue.get()  # Get work item from queue
         print(f'upload to rails? {track.id}')
-
-        # Notify the queue that the "work item" has been processed.
-        queue.task_done()
+        queue.task_done()  # Notify queue that work item processed
 
 
 if __name__ == "__main__":
