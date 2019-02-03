@@ -9,7 +9,7 @@ def upload_image(folder, frame, captured_at):
     # Create an S3 client
     s3 = boto3.client('s3')
 
-    file = tempfile.NamedTemporaryFile(delete=True)
+    file = tempfile.NamedTemporaryFile(suffix='.jpg', delete=True)
     write_success = cv2.imwrite(file.name, frame)
     if not write_success:
         print('couldnt save image to ', file.name)
