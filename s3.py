@@ -23,3 +23,5 @@ def upload_image(folder, frame, captured_at):
     log.info(f'uploading to s3 {bucket_name}')
     s3.upload_file(file.name, bucket_name, s3_key)
     log.info(f'upload complete')
+
+    return s3_key

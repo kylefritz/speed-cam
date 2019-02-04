@@ -1,15 +1,13 @@
 from log import log
 
-class Region:
-    @staticmethod
-    def can_merge(r1, r2):
-        # TODO: compare regions
-        return False
 
-    @staticmethod
-    def merge(r1, r2):
-        # TODO: merge regions
-        return r1
+class Region:
+    def __init__(self, geometry):
+        self.geometry = geometry
+
+    def is_car(self):
+        # TODO: return False if primary color indicates region is just headlights
+        return True
 
     @staticmethod
     def merge_regions(regions):
@@ -25,10 +23,10 @@ class Region:
                 r1 = regions[i]
                 r2 = regions[j]
 
-                if Region.can_merge(r1, r2):
+                if can_merge(r1, r2):
                     already_merged.add(i)
                     already_merged.add(j)
-                    yield Region.merge(r1, r2)
+                    yield merge(r1, r2)
 
         # also return anything that wasn't merged
         for index, region in enumerate(regions):
@@ -36,9 +34,12 @@ class Region:
                 continue
             yield region
 
-    def __init__(self, geometry):
-        self.geometry = geometry
 
-    def is_car(self):
-        # TODO: return False if primary color indicates region is just headlights
-        return True
+def can_merge(r1, r2):
+    # TODO: compare regions
+    return False
+
+
+def merge(r1, r2):
+    # TODO: merge regions
+    return r1
