@@ -2,8 +2,9 @@ from log import log
 
 
 class Region:
-    def __init__(self, geometry):
-        self.geometry = geometry
+    def __init__(self, rectange, frame):
+        self.rectange = rectange
+        self.frame = frame
 
     def is_car(self):
         # TODO: return False if primary color indicates region is just headlights

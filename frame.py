@@ -5,6 +5,7 @@ import imutils
 from log import log
 import s3
 import web_api
+from region import Region
 
 
 class Frame:
@@ -17,13 +18,10 @@ class Frame:
         folder = 'occasional' if self.is_occasional else 'tracks'
         self.s3_key = s3.upload_image(folder, crop_remove_warp(self.image), self.captured_at)
 
-    def fgbg_image(self):
-        # tight crop & blur
-        cropped = crop_to_road(self.image)
-        return blur(cropped)  # TODO: why blur going into fgbg?
-
-    @staticmethod
-    def find_contours(blurred, fgmask):
+    def generate_region_proposals(self, background_subtractor):
+        # apply tight crop and subtract background
+        blurred = blur(crop_to_road(self.image))  # TODO: why blur going into fgbg?
+        fgmask = background_subtractor.apply(blurred)
         SHADOW_VALUE = 127
         foreground_mask = cv2.threshold(fgmask, SHADOW_VALUE + 1, 255, cv2.THRESH_BINARY)[1]
         foreground_mask = cv2.dilate(foreground_mask, None, iterations=3)
@@ -35,7 +33,10 @@ class Frame:
         # find and filter region proposals
         contours = cv2.findContours(gray_blurred, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         contour_rectangles = map(cv2.boundingRect, imutils.grab_contours(contours))
-        return filter(is_reasonable_size, contour_rectangles)
+        filtered_rectanges = filter(is_reasonable_size, contour_rectangles)
+
+        for rect in filtered_rectanges:
+            yield Region(rect, self)
 
 
 def crop_remove_warp(im):

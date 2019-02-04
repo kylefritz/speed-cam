@@ -20,12 +20,17 @@ honcho start
 # setup STORAGE_ROOT, hardcoded to /mnt/usb-sd
 ```
 
+## data model
+
+track ->> regions
+frame ->> regions
+
 ## Next steps
 1. Use tracker to associate sucessive frames
     1. could start by just associating with any track already have and then killing tracks after 5 seconds
 2. Compute speed on tracks
 3. Post tracks to the rails app when reaped
-    1. need a worker process to upload reaped tracks
+    ~1. need a worker process to upload reaped tracks~
 4. Display tracks
 5. Integration test for tracker
     1. Need to collect a bunch of live frames for ground truth. ideally cruise control through the scene

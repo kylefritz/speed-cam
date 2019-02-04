@@ -7,35 +7,32 @@ import time
 from object_tracker import ObjectTracker
 from frame import Frame
 from log import log
-import paths
 import web_api
 
 DEEPCAM_FFSERVER_URL = 'http://deepcam.local:8090/camera.mjpeg'
 
 
-class SpeedCamera:
+class ImagePipeline:
     '''
     Stateful class that updates BackgroundSubtractor & ObjectTracker
-    for each frame captured. Sends frames to s3 and track to rails app.
+    for each frame captured. Enqueues sending frames to s3 and tracks to rails app.
     '''
     def __init__(self, completed_tracks_q, frames_q):
-        self.fgbg = cv2.createBackgroundSubtractorMOG2()
+        self.background_subtractor = cv2.createBackgroundSubtractorMOG2()
         self.tracker = ObjectTracker()
         self.completed_tracks_q = completed_tracks_q
         self.frames_q = frames_q
 
     def process_frame(self, frame):
         # rm background & shadows to get region proposals
-        blurred = frame.fgbg_image()
-        fgmask = self.fgbg.apply(blurred)
-        contour_rectangles = Frame.find_contours(blurred, fgmask)
+        region_proposals = frame.generate_region_proposals(self.background_subtractor)
 
-        # enqueue save frame to s3 if contours found
-        if contour_rectangles:
+        # enqueue save frame to s3 if region proposals found
+        if region_proposals:
             self.frames_q.put_nowait(frame)
 
         # associate region proposals into new & existing tracks
-        completed_tracks = self.tracker.process(frame, contour_rectangles)
+        completed_tracks = self.tracker.process(region_proposals)
 
         # enqueue save completed tracks to rails
         for track in completed_tracks:
@@ -57,7 +54,7 @@ def capture_single_image():
 
 
 async def image_pipeline(tracks_q, frames_q):
-    robot = SpeedCamera(tracks_q, frames_q)
+    pipeline = ImagePipeline(tracks_q, frames_q)
     cam = cv2.VideoCapture(DEEPCAM_FFSERVER_URL)
     while True:
         success, image = cam.read()
@@ -68,7 +65,7 @@ async def image_pipeline(tracks_q, frames_q):
             continue
 
         frame = Frame(image, captured_at)
-        robot.process_frame(frame)
+        pipeline.process_frame(frame)
 
 
 async def frame_s3_worker(queue):

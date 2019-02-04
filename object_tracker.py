@@ -1,19 +1,21 @@
 import datetime
+
 from region import Region
 from track import Track
 from log import log
 
 
 class ObjectTracker:
+    ttl = datetime.timedelta(seconds=10)
+
     def __init__(self):
         self.tracks = []
 
-    def process(self, image, region_proposals):
-        unmerged_regions = [Region(r) for r in region_proposals]
-        regions = Region.merge_regions(unmerged_regions)
+    def process(self, region_proposals):
+        birthed, promoted, reaped = [], [], []
 
-        # associate with existing track
-        for region in regions:
+        region_proposals = Region.merge_regions(region_proposals)
+        for region in region_proposals:
             if not region.is_car():
                 continue
 
@@ -23,22 +25,17 @@ class ObjectTracker:
                     track.update(region)
                     continue
 
-            # birth new track
-            self.tracks.append(Track(region))
-            log.info(f'birthed')
+            birthed.append(Track(region))
 
-        # split tracks into next generation and ones ready to reap
-        next_generation, reaped = [], []
+        # existing tracks are either promoted or reaped
         for track in self.tracks:
-            if track.age() > datetime.timedelta(seconds=10):
+            if track.age() > ObjectTracker.ttl:
                 reaped.append(track)
             else:
-                track.inc_generation()
-                next_generation.append(track)
+                promoted.append(track.promote())
 
-        log.info(f'promoted={len(next_generation)} reaped={len(reaped)}')
-        self.tracks = next_generation
+        log.info(f'birthed={len(birthed)} promoted={len(promoted)} reaped={len(reaped)}')
+        self.tracks = birthed + promoted
 
         # return the reaped tracks so they can be saved
-        # TODO: this api is a little weird
         return reaped
