@@ -27,7 +27,7 @@ lows = [l + "_low" for l in hsv]
 his = [l + "_hi" for l in hsv]
 def read_values(labels):
     return np.array([cv2.getTrackbarPos(l,'result') for l in labels])
-        
+
 def update_filter(t=None):
 
     frame = read_road_image('test-images/2018-12-27T17:08:00.704668.jpg')
