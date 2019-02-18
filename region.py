@@ -10,6 +10,14 @@ class Region:
         # TODO: return False if primary color indicates region is just headlights
         return True
 
+    def to_dict(self):
+        (x,y, height, width) = self.rectange
+        return {
+            'x': x, 'y': y,
+            'height': height, 'width': width,
+            's3_key': self.frame.s3_key,
+        }
+
     @staticmethod
     def merge_regions(regions):
         already_merged = set()

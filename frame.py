@@ -3,9 +3,10 @@ import datetime
 import imutils
 
 from log import log
+from region import Region
+import paths
 import s3
 import web_api
-from region import Region
 
 
 class Frame:
@@ -13,10 +14,11 @@ class Frame:
         self.image = flip_and_rotate(image)
         self.captured_at = captured_at
         self.is_occasional = is_occasional
+        folder = 'occasional' if self.is_occasional else 'tracks'
+        self.s3_key = paths.image_s3_key(folder, self.captured_at)
 
     def upload_to_s3(self):
-        folder = 'occasional' if self.is_occasional else 'tracks'
-        self.s3_key = s3.upload_image(folder, crop_remove_warp(self.image), self.captured_at)
+        s3.upload_image(crop_remove_warp(self.image), self.s3_key)
 
     def generate_region_proposals(self, background_subtractor):
         # apply tight crop and subtract background

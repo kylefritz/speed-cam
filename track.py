@@ -22,7 +22,7 @@ class Track:
         return {
             'track_id': self.id,
             'generation': self.generation,
-            'regions': self.regions,
+            'regions': [r.to_dict() for r in self.regions],
         }
 
     next_object_id = 0
