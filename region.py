@@ -15,7 +15,7 @@ class Region:
         return {
             'x': x, 'y': y,
             'height': height, 'width': width,
-            's3_key': self.frame.s3_key,
+            'image_s3_key': self.frame.s3_key,
         }
 
     @staticmethod

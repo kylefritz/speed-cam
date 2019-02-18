@@ -20,7 +20,7 @@ class Track:
 
     def to_dict(self):
         return {
-            'track_id': self.id,
+            'local_id': self.id,
             'generation': self.generation,
             'regions': [r.to_dict() for r in self.regions],
         }
