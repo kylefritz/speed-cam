@@ -20,6 +20,7 @@ class Region:
 
     @staticmethod
     def merge_regions(regions):
+        regions = list(regions)
         already_merged = set()
         for i in range(len(regions)):
             if i + 1 > len(regions):
