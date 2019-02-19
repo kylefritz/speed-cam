@@ -15,7 +15,9 @@ import web_api
 def make_frame(seconds):
     im = cv2.imread('./test-images/calibration.jpg')
     captured_at = datetime.datetime.now() + datetime.timedelta(seconds=seconds)
-    return Frame(im, captured_at)
+    frame = Frame(im, captured_at)
+    frame.upload_to_s3()
+    return frame
 
 
 class TestStringMethods(unittest.TestCase):
@@ -24,7 +26,6 @@ class TestStringMethods(unittest.TestCase):
             (13, 13, 103, 103),
             (23, 23, 203, 203),
         ]
-
         self.region1 = Region(rectangles[0], make_frame(0))
         self.track = Track(self.region1)
         self.track.promote()
