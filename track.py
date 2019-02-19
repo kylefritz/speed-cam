@@ -17,7 +17,7 @@ class Track:
         self.regions.append(region)
 
     def age(self):
-        return datetime.datetime.now() - self.regions[-1].captured_at
+        return datetime.datetime.now() - self.regions[-1].frame.captured_at
 
     def promote(self):
         self.generation += 1
