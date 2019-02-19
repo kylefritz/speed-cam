@@ -40,7 +40,7 @@ class ImagePipeline:
 
 
 def capture_single_image():
-    log.info(f'capturing image')
+    log.debug(f'capturing image')
     cam = cv2.VideoCapture(DEEPCAM_FFSERVER_URL)
     success, image = cam.read()
     captured_at = datetime.datetime.now()
@@ -48,7 +48,7 @@ def capture_single_image():
         log.error('occasional image cam.read failed')
         return
 
-    log.info('captured')
+    log.debug('captured')
     frame = Frame(image, captured_at, is_occasional=True)
     frame.upload_to_s3()
 

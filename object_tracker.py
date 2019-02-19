@@ -34,7 +34,7 @@ class ObjectTracker:
             else:
                 promoted.append(track.promote())
 
-        log.info(f'birthed={len(birthed)} promoted={len(promoted)} reaped={len(reaped)}')
+        log.debug(f'birthed={len(birthed)} promoted={len(promoted)} reaped={len(reaped)}')
         self.tracks = birthed + promoted
 
         # return the reaped tracks so they can be saved
