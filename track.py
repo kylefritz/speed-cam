@@ -8,6 +8,11 @@ class Track:
         self.generation = 0
         self.regions = [region]
 
+    def matches(self, region):
+        # TODO: check features of proposed region to see if matches
+        # for now, just rely on the TLL
+        return True
+
     def update(self, region):
         self.regions.append(region)
 

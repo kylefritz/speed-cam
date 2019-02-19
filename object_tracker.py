@@ -6,7 +6,7 @@ from log import log
 
 
 class ObjectTracker:
-    ttl = datetime.timedelta(seconds=10)
+    ttl = datetime.timedelta(seconds=2)
 
     def __init__(self):
         self.tracks = []
