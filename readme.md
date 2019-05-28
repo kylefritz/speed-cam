@@ -22,9 +22,11 @@ honcho start
 
 ## data model
 
+```
 track ->> regions
 frame ->> regions
 frame ->> track
+```
 
 ## Next steps
 1. Use tracker to associate sucessive frames
